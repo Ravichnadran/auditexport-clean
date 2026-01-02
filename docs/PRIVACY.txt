@@ -1,0 +1,72 @@
+Perfect. Below are **production-ready, auditor-safe documents** for **AuditExport**.
+You can ship these **unchanged** with your Gumroad package.
+
+---
+
+# 📄 PRIVACY.txt
+
+*Last updated: 2025-01-XX*
+
+## Privacy Statement – AuditExport
+
+AuditExport is designed as a **local, offline-first audit evidence tool**.
+
+### 1. Personal Data Collection
+
+AuditExport:
+
+* Does **not collect personal data**
+* Does **not track users**
+* Does **not use analytics**
+* Does **not embed telemetry**
+
+No personally identifiable information (PII) is gathered by the tool itself.
+
+---
+
+### 2. Data Processing
+
+All processing occurs:
+
+* Locally on the user’s machine
+* Under the user’s credentials
+* Against user-owned systems
+
+AuditExport does not transmit data to AuditExport servers or third parties.
+
+---
+
+### 3. Credentials
+
+Any credentials used (e.g., GitHub tokens):
+
+* Are supplied by the user
+* Are read at runtime only
+* Are never stored, logged, or transmitted
+
+---
+
+### 4. Evidence Ownership
+
+All generated evidence:
+
+* Belongs exclusively to the user
+* Remains on the local filesystem
+* Can be inspected, modified, or deleted by the user
+
+---
+
+### 5. Third-Party Platforms
+
+When configured, AuditExport interacts with third-party APIs (e.g., GitHub) under the user’s authorization.
+Data access and retention policies of those platforms are governed by their own terms.
+
+---
+
+### 6. Contact
+
+Privacy questions can be directed to:
+
+[privacy@auditexport.com](mailto:privacy@auditexport.com)
+
+---

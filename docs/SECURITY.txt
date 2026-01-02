@@ -1,0 +1,145 @@
+# SECURITY STATEMENT – AuditExport
+
+Last updated: 2025-01-XX
+
+This document describes how **AuditExport** handles security, data access, and execution.
+
+AuditExport is designed to meet the expectations of **security auditors**, **compliance teams**, and **risk assessors**.
+
+---
+
+## 1. Execution Model
+
+* AuditExport runs **entirely on the user’s local machine**
+* No cloud services, background agents, or remote execution
+* No outbound network connections except to explicitly configured platforms (e.g., GitHub API)
+
+There is **no server-side component**.
+
+---
+
+## 2. Data Handling
+
+AuditExport:
+
+* Does **not collect**, **store**, or **transmit** user data externally
+* Writes evidence **only to the local filesystem**
+* Never uploads audit data to AuditExport or third parties
+
+All generated evidence remains under the user’s control.
+
+---
+
+## 3. Credentials & Secrets
+
+* Credentials (e.g., GitHub tokens) are provided **by the user**
+* Tokens are read from environment variables or local configuration
+* Tokens are **never logged**, persisted, or embedded in output files
+
+AuditExport does **not** manage secrets on behalf of the user.
+
+---
+
+## 4. CI/CD Evidence Collection (SOC 2)
+
+When CI/CD evidence is enabled:
+
+* Only **metadata** is collected
+* Evidence includes:
+
+  * Workflow existence
+  * Workflow configuration files
+  * Trigger conditions (PR, merge, push)
+  * Execution history (timestamps, status)
+
+AuditExport **does not** collect:
+
+* Build logs
+* Artifacts
+* Secrets values
+* Runtime environment variables
+
+---
+
+## 5. Principle of Least Privilege
+
+AuditExport requires **read-only access** to supported platforms.
+
+Recommended permissions:
+
+* GitHub: `repo:read`, `org:read`, `actions:read`
+
+The Tool does not perform:
+
+* Writes
+* Mutations
+* Configuration changes
+* Administrative actions
+
+---
+
+## 6. Tamper Resistance & Integrity
+
+* Evidence is written in structured, human-readable formats (JSON, TXT)
+* Hashes are generated for all evidence files
+* Evidence bundles are zipped after collection
+* Hash verification enables post-run integrity validation
+
+---
+
+## 7. Audit Transparency
+
+AuditExport is intentionally designed so that:
+
+* All collected evidence is visible
+* No hidden processing occurs
+* Auditors can trace:
+
+  * What was collected
+  * When it was collected
+  * From which source
+
+This supports **audit defensibility**.
+
+---
+
+## 8. Vulnerability Reporting
+
+If you discover a security vulnerability:
+
+* Do **not** publicly disclose it
+* Report responsibly to:
+
+[security@auditexport.com](mailto:security@auditexport.com)
+
+Include:
+
+* Description of the issue
+* Steps to reproduce
+* Potential impact
+
+---
+
+## 9. Scope Clarification
+
+AuditExport is **not**:
+
+* A security scanner
+* A penetration testing tool
+* A vulnerability assessment platform
+* A certification authority
+
+It is an **evidence automation utility**.
+
+---
+
+## 10. Compliance Alignment
+
+AuditExport supports evidence collection relevant to:
+
+* ISO/IEC 27001
+* SOC 2 (Trust Services Criteria)
+
+Final compliance decisions remain the responsibility of the organization and its auditor.
+
+---

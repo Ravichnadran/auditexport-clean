@@ -1,0 +1,5 @@
+.DS_Store
+evidence/
+auditexport-evidence-*
+dist/
+

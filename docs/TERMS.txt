@@ -1,0 +1,112 @@
+# TERMS OF USE – AuditExport
+
+Last updated: 2025-01-XX
+
+These Terms of Use (“Terms”) govern your use of **AuditExport** (“the Tool”), a locally executed software utility provided as a downloadable product.
+
+By downloading, installing, or using the Tool, you agree to these Terms.
+
+---
+
+## 1. License Grant
+
+AuditExport is licensed, not sold.
+
+You are granted a **non-exclusive, non-transferable, non-sublicensable license** to use the Tool for your internal business or personal compliance and audit-preparation purposes.
+
+This license applies only to the individual or organization that purchased the Tool.
+
+---
+
+## 2. Permitted Use
+
+You MAY:
+
+* Run the Tool locally on your own systems
+* Generate audit evidence for internal use or external auditors
+* Use the output in ISO/IEC 27001, SOC 2, or similar compliance audits
+* Install the Tool on multiple machines owned or controlled by you
+
+---
+
+## 3. Prohibited Use
+
+You MAY NOT:
+
+* Redistribute, resell, sublicense, or share the Tool or binaries
+* Publish the Tool or any part of it as a hosted service or SaaS
+* Reverse engineer, decompile, or attempt to extract source code
+* Remove or alter copyright or license notices
+* Represent the Tool as “certified”, “approved”, or “endorsed” by any standards body
+
+---
+
+## 4. No Warranty
+
+The Tool is provided **“AS IS”**, without warranties of any kind.
+
+AuditExport makes **no guarantees** that:
+
+* The Tool will pass an audit
+* The generated evidence will be accepted by any specific auditor
+* The Tool satisfies all requirements of ISO/IEC 27001, SOC 2, or any other framework
+
+Audit outcomes depend on your environment, controls, and auditor judgment.
+
+---
+
+## 5. Limitation of Liability
+
+To the maximum extent permitted by law:
+
+AuditExport shall **not be liable** for any direct, indirect, incidental, special, or consequential damages, including but not limited to:
+
+* Audit failures
+* Loss of business
+* Compliance penalties
+* Data loss
+* Reputation damage
+
+Your sole remedy is to discontinue use of the Tool.
+
+---
+
+## 6. Responsibility for Data & Credentials
+
+* The Tool runs **entirely on your local system**
+* You are responsible for providing and protecting any access tokens or credentials
+* AuditExport does not store, transmit, or retain your data
+
+See `SECURITY.txt` and `PRIVACY.txt` for details.
+
+---
+
+## 7. Updates & Support
+
+* Updates may be provided at the discretion of AuditExport
+* No guaranteed support, response time, or maintenance is implied
+* Feature availability may vary by product tier (ISO-only vs ISO+SOC2)
+
+---
+
+## 8. Termination
+
+This license automatically terminates if you violate these Terms.
+
+Upon termination, you must stop using and delete all copies of the Tool.
+
+---
+
+## 9. Governing Law
+
+These Terms are governed by the laws of the applicable jurisdiction of the licensor, without regard to conflict-of-law principles.
+
+---
+
+## 10. Contact
+
+For licensing or legal inquiries, contact:
+
+[support@auditexport.com](mailto:support@auditexport.com)
+
+---
