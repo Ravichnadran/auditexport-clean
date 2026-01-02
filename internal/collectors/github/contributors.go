@@ -63,6 +63,12 @@ func WriteContributors() error {
 				return err
 			}
 
+			// ✅ HANDLE NO CONTRIBUTORS (204 No Content)
+			if resp.StatusCode == 204 {
+				resp.Body.Close()
+				break // valid audit state: no contributors
+			}
+
 			if resp.StatusCode != 200 {
 				resp.Body.Close()
 				return fmt.Errorf(

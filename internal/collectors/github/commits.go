@@ -66,6 +66,12 @@ func WriteCommits() error {
 				return err
 			}
 
+			// ✅ HANDLE EMPTY REPOSITORY (409 Conflict)
+			if resp.StatusCode == 409 {
+				resp.Body.Close()
+				break // valid audit state: no commits
+			}
+
 			if resp.StatusCode != 200 {
 				resp.Body.Close()
 				return fmt.Errorf(
@@ -136,5 +142,4 @@ func WriteCommits() error {
 		data,
 		0644,
 	)
-
 }

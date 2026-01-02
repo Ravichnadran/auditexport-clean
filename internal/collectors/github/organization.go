@@ -14,6 +14,7 @@ type Organization struct {
 	Name        string    `json:"name"`
 	URL         string    `json:"url"`
 	Description string    `json:"description"`
+	Type        string    `json:"type"` // "User" or "Organization"
 	CollectedAt time.Time `json:"collected_at"`
 }
 

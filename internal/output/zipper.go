@@ -10,8 +10,11 @@ import (
 )
 
 func ZipEvidence() error {
-	// Create zip at run root
-	zipPath := filepath.Join(run.BaseDir(), "evidence.zip")
+	base := run.BaseDir()
+
+	// ✅ Timestamped zip name
+	zipName := base + ".zip"
+	zipPath := filepath.Join(base, zipName)
 
 	zipFile, err := os.Create(zipPath)
 	if err != nil {
@@ -22,19 +25,17 @@ func ZipEvidence() error {
 	zipWriter := zip.NewWriter(zipFile)
 	defer zipWriter.Close()
 
-	evidenceRoot := run.EvidencePath()
-
-	return filepath.Walk(evidenceRoot, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(run.EvidencePath(), func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		// Skip directories and the zip file itself
-		if info.IsDir() || strings.HasSuffix(path, "evidence.zip") {
+		if info.IsDir() || strings.HasSuffix(path, zipName) {
 			return nil
 		}
 
-		relPath, err := filepath.Rel(evidenceRoot, path)
+		relPath, err := filepath.Rel(run.EvidencePath(), path)
 		if err != nil {
 			return err
 		}

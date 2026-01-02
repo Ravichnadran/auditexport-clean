@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"auditexport/internal/collectors/github"
-	"auditexport/internal/run"
 )
 
 type Workflow struct {
@@ -37,8 +36,9 @@ func WriteWorkflows(owner, repo string) error {
 		return err
 	}
 
+	// ✅ RELATIVE path ONLY
 	return github.WriteJSON(
-		run.EvidencePath("github", "workflows", "workflows.json"),
+		"github/workflows/workflows.json",
 		resp.Workflows,
 	)
 }
