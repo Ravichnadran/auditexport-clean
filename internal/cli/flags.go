@@ -1,6 +1,10 @@
 package cli
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+	"os"
+)
 
 type RunFlags struct {
 	Standard string
@@ -11,25 +15,43 @@ type RunFlags struct {
 func ParseRunFlags(args []string) RunFlags {
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
 
-	standard := fs.String(
-		"standard",
-		"iso27001",
-		"compliance standard: iso27001 or soc2",
-	)
+	// Custom professional help output
+	fs.Usage = func() {
+		fmt.Fprintln(os.Stdout, `
+AuditExport  —  Technical Audit Evidence Generator
 
-	repo := fs.String(
-		"repo",
-		"auditexport",
-		"target repository name",
-	)
+USAGE       :  auditexport run [flags]
 
-	branch := fs.String(
-		"branch",
-		"main",
-		"target branch name",
-	)
+REQUIRED    :
+  --standard    iso27001|soc2
+                Compliance standard to generate evidence for
 
-	// SAFE: parse only the args passed to this function
+OPTIONAL    :
+  --repo        <name>
+                GitHub repository name (default: auditexport)
+
+  --branch      <name>
+                Target branch name (default: main)
+
+  --help
+                Show this help message and exit
+
+ENVIRONMENT :
+  GITHUB_TOKEN
+                Required for GitHub evidence collection (read-only)
+
+EXAMPLES    :
+  auditexport run --standard iso27001
+  auditexport run --standard soc2 --repo my-repo
+  auditexport run --help
+`)
+
+	}
+
+	standard := fs.String("standard", "iso27001", "")
+	repo := fs.String("repo", "auditexport", "")
+	branch := fs.String("branch", "main", "")
+
 	_ = fs.Parse(args)
 
 	return RunFlags{
