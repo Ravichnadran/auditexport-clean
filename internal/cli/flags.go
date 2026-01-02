@@ -10,13 +10,22 @@ type RunFlags struct {
 	Standard string
 	Repo     string
 	Branch   string
+	DryRun   bool
 }
 
 func ParseRunFlags(args []string) RunFlags {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 
-	// Silence default Go error output (we control formatting)
+	// Silence default Go error output
 	fs.SetOutput(os.Stdout)
+
+	// -------------------------------
+	// Flags (ALL inputs are flags)
+	// -------------------------------
+	standard := fs.String("standard", "", "")
+	repo := fs.String("repo", "auditexport", "")
+	branch := fs.String("branch", "main", "")
+	dryRun := fs.Bool("dry-run", false, "")
 
 	// -------------------------------
 	// Custom professional help output
@@ -41,6 +50,10 @@ OPTIONAL:
       Target branch name
       Default: main
 
+  --dry-run
+      Validate configuration and print execution plan
+      without creating files or collecting evidence
+
   --help
       Show this help message and exit
 
@@ -51,16 +64,9 @@ ENVIRONMENT:
 EXAMPLES:
   auditexport run --standard iso27001
   auditexport run --standard soc2 --repo my-repo
-  auditexport run --help
+  auditexport run --standard soc2 --dry-run
 `)
 	}
-
-	// -------------------------------
-	// Flags (ALL inputs are flags)
-	// -------------------------------
-	standard := fs.String("standard", "", "")
-	repo := fs.String("repo", "auditexport", "")
-	branch := fs.String("branch", "main", "")
 
 	// -------------------------------
 	// Parse flags
@@ -98,5 +104,6 @@ EXAMPLES:
 		Standard: *standard,
 		Repo:     *repo,
 		Branch:   *branch,
+		DryRun:   *dryRun,
 	}
 }

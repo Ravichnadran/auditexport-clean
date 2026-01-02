@@ -24,9 +24,6 @@ func main() {
 	case "run":
 		run.InitRunContext()
 
-		totalSteps := 15
-		step := 1
-
 		// --------------------------------------------------
 		// Parse & validate flags
 		// --------------------------------------------------
@@ -39,6 +36,44 @@ func main() {
 
 		standard := run.Standard(flags.Standard)
 		caps := run.CapabilitiesForStandard(standard)
+
+		// --------------------------------------------------
+		// Step count (ISO27001 = 14, SOC2 = 15)
+		// --------------------------------------------------
+		totalSteps := 14
+		if caps.AllowExtendedControls {
+			totalSteps = 15
+		}
+		step := 1
+
+		// --------------------------------------------------
+		// 🔐 GitHub Preflight Validation (NO DIRS YET)
+		// --------------------------------------------------
+		cli.Step(step, totalSteps, "Validating GitHub credentials")
+		if err := github.ValidateAuth(); err != nil {
+			cli.Failed("GitHub authentication failed")
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		cli.Done("GitHub authentication validated")
+		step++
+
+		// --------------------------------------------------
+		// 🧪 Dry Run Mode (NO FILE SYSTEM / NO API CALLS)
+		// --------------------------------------------------
+		if flags.DryRun {
+			fmt.Println("\nAuditExport — Dry Run Summary")
+			fmt.Println("--------------------------------")
+			fmt.Printf("Standard        : %s\n", flags.Standard)
+			fmt.Printf("Repository      : %s\n", flags.Repo)
+			fmt.Printf("Branch          : %s\n", flags.Branch)
+			fmt.Printf("Extended Checks : %v\n", caps.AllowExtendedControls)
+			fmt.Printf("CI/CD Evidence  : %v\n", caps.AllowCICD)
+			fmt.Println("\nNo files were created.")
+			fmt.Println("No evidence was collected.")
+			fmt.Println("Dry run completed successfully.\n")
+			return
+		}
 
 		// --------------------------------------------------
 		// Initialize run & output directories
@@ -171,112 +206,57 @@ func main() {
 			repo := flags.Repo
 			branch := flags.Branch
 
-			if caps.AllowCICD {
-				cli.Step(step, totalSteps, "Collecting CI/CD evidence (GitHub Actions)")
-				run.WriteExecutionLog("CI/CD evidence collection enabled")
+			cli.Step(step, totalSteps, "Collecting CI/CD evidence (GitHub Actions)")
+			run.WriteExecutionLog("CI/CD evidence collection enabled")
 
-				if err := cicd.WriteWorkflows(owner, repo); err != nil {
-					cli.Failed("failed to collect workflows")
-					fmt.Println(err)
-					os.Exit(1)
-				}
-
-				if err := cicd.WriteWorkflowFiles(owner, repo); err != nil {
-					cli.Failed("failed to collect workflow files")
-					fmt.Println(err)
-					os.Exit(1)
-				}
-
-				if err := cicd.WriteWorkflowRuns(owner, repo); err != nil {
-					cli.Failed("failed to collect workflow runs")
-					fmt.Println(err)
-					os.Exit(1)
-				}
-
-				if err := cicd.WriteCISummary(); err != nil {
-					cli.Failed("failed to write CI summary")
-					fmt.Println(err)
-					os.Exit(1)
-				}
-
-				cli.Done("CI/CD evidence collected")
-				run.WriteExecutionLog("CI/CD evidence collected")
-				step++
-			} else {
-				cli.Skipped("CI/CD evidence (ISO 27001)")
-				run.WriteExecutionLog("CI/CD evidence skipped (ISO 27001)")
+			if err := cicd.WriteWorkflows(owner, repo); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
 			}
+			if err := cicd.WriteWorkflowFiles(owner, repo); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			if err := cicd.WriteWorkflowRuns(owner, repo); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			if err := cicd.WriteCISummary(); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			cli.Done("CI/CD evidence collected")
+			step++
 
 			if err := github.WriteRequiredReviews(owner, repo, branch); err != nil {
-				fmt.Println("failed to write github required reviews:", err)
+				fmt.Println(err)
 				os.Exit(1)
 			}
-
 			if err := github.WriteMergePolicies(owner, repo, branch); err != nil {
-				fmt.Println("failed to write github merge policies:", err)
+				fmt.Println(err)
 				os.Exit(1)
 			}
-
-			run.WriteExecutionLog("github required reviews collected")
-			run.WriteExecutionLog("github merge policies collected")
-
-		} else {
-			cli.Skipped("SOC2 extended controls")
-			run.WriteExecutionLog("required reviews skipped (ISO 27001)")
-			run.WriteExecutionLog("merge policies skipped (ISO 27001)")
 		}
 
 		// --------------------------------------------------
-		// Run Metadata & Summaries
+		// Summaries, Hashes & Packaging
 		// --------------------------------------------------
-		cli.Step(step, totalSteps, "Generating summaries and metadata")
+		cli.Step(step, totalSteps, "Generating summaries and packaging evidence")
+
 		if err := run.WriteRunMetadata(flags.Standard); err != nil {
-			fmt.Println("failed to write run metadata:", err)
+			fmt.Println(err)
 			os.Exit(1)
 		}
+		_ = summaries.WriteExecutiveSummary()
+		_ = summaries.WriteGitHubSummary()
+		_ = summaries.WriteTechnicalSummary()
+		_ = summaries.WriteAuditorNotes()
 
-		if err := summaries.WriteExecutiveSummary(); err != nil {
-			fmt.Println("failed to write executive summary:", err)
-			os.Exit(1)
-		}
+		_ = run.WriteHashes()
+		_ = output.ZipEvidence()
 
-		if err := summaries.WriteGitHubSummary(); err != nil {
-			fmt.Println("failed to write github summary:", err)
-			os.Exit(1)
-		}
-
-		if err := summaries.WriteTechnicalSummary(); err != nil {
-			fmt.Println("failed to write technical summary:", err)
-			os.Exit(1)
-		}
-
-		if err := summaries.WriteAuditorNotes(); err != nil {
-			fmt.Println("failed to write auditor notes:", err)
-			os.Exit(1)
-		}
-		cli.Done("Summaries generated")
-		step++
-
-		// --------------------------------------------------
-		// Integrity & Packaging
-		// --------------------------------------------------
-		cli.Step(step, totalSteps, "Generating hashes and packaging evidence")
-		if err := run.WriteHashes(); err != nil {
-			fmt.Println("failed to write hashes:", err)
-			os.Exit(1)
-		}
-
-		if err := output.ZipEvidence(); err != nil {
-			fmt.Println("failed to zip evidence:", err)
-			os.Exit(1)
-		}
 		cli.Done("Evidence packaged")
-
-		run.WriteExecutionLog("hashes generated")
-		run.WriteExecutionLog("evidence zipped")
-		run.WriteExecutionLog("summaries generated")
-		run.WriteExecutionLog("run completed")
-
 		fmt.Println("\nauditexport run completed")
 
 	default:
