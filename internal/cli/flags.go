@@ -13,46 +13,86 @@ type RunFlags struct {
 }
 
 func ParseRunFlags(args []string) RunFlags {
-	fs := flag.NewFlagSet("run", flag.ExitOnError)
+	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 
+	// Silence default Go error output (we control formatting)
+	fs.SetOutput(os.Stdout)
+
+	// -------------------------------
 	// Custom professional help output
+	// -------------------------------
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stdout, `
-AuditExport  —  Technical Audit Evidence Generator
+AuditExport — Technical Audit Evidence Generator
 
-USAGE       :  auditexport run [flags]
+USAGE:
+  auditexport run [flags]
 
-REQUIRED    :
-  --standard    iso27001|soc2
-                Compliance standard to generate evidence for
+REQUIRED:
+  --standard iso27001|soc2
+      Compliance standard to generate evidence for
 
-OPTIONAL    :
-  --repo        <name>
-                GitHub repository name (default: auditexport)
+OPTIONAL:
+  --repo <repository>
+      GitHub repository name
+      Default: auditexport
 
-  --branch      <name>
-                Target branch name (default: main)
+  --branch <branch>
+      Target branch name
+      Default: main
 
   --help
-                Show this help message and exit
+      Show this help message and exit
 
-ENVIRONMENT :
+ENVIRONMENT:
   GITHUB_TOKEN
-                Required for GitHub evidence collection (read-only)
+      Required for GitHub evidence collection (read-only access)
 
-EXAMPLES    :
+EXAMPLES:
   auditexport run --standard iso27001
   auditexport run --standard soc2 --repo my-repo
   auditexport run --help
 `)
-
 	}
 
-	standard := fs.String("standard", "iso27001", "")
+	// -------------------------------
+	// Flags (ALL inputs are flags)
+	// -------------------------------
+	standard := fs.String("standard", "", "")
 	repo := fs.String("repo", "auditexport", "")
 	branch := fs.String("branch", "main", "")
 
-	_ = fs.Parse(args)
+	// -------------------------------
+	// Parse flags
+	// -------------------------------
+	if err := fs.Parse(args); err != nil {
+		// Handles --help and unknown flags cleanly
+		os.Exit(0)
+	}
+
+	// -------------------------------
+	// Reject positional arguments
+	// -------------------------------
+	if fs.NArg() > 0 {
+		fmt.Fprintf(os.Stderr, "unexpected arguments: %v\n\n", fs.Args())
+		fs.Usage()
+		os.Exit(2)
+	}
+
+	// -------------------------------
+	// Validate required flags
+	// -------------------------------
+	if *standard == "" {
+		fmt.Fprintln(os.Stderr, "error: --standard is required\n")
+		fs.Usage()
+		os.Exit(2)
+	}
+
+	if *standard != "iso27001" && *standard != "soc2" {
+		fmt.Fprintf(os.Stderr, "invalid --standard value: %s\n\n", *standard)
+		fs.Usage()
+		os.Exit(2)
+	}
 
 	return RunFlags{
 		Standard: *standard,
