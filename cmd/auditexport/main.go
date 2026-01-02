@@ -249,7 +249,7 @@ func main() {
 			os.Exit(1)
 		}
 		_ = summaries.WriteExecutiveSummary()
-		_ = summaries.WriteGitHubSummary()
+		_ = summaries.WriteGitHubSummary(flags.Standard)
 		_ = summaries.WriteTechnicalSummary()
 		_ = summaries.WriteAuditorNotes()
 

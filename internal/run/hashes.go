@@ -24,8 +24,24 @@ func WriteHashes() error {
 			return err
 		}
 
-		// Skip directories and the hashes file itself
-		if info.IsDir() || strings.HasSuffix(path, "hashes.txt") {
+		// --------------------------------------------------
+		// Skip directories
+		// --------------------------------------------------
+		if info.IsDir() {
+			return nil
+		}
+
+		// --------------------------------------------------
+		// Skip the hashes file itself
+		// --------------------------------------------------
+		if strings.HasSuffix(path, "hashes.txt") {
+			return nil
+		}
+
+		// --------------------------------------------------
+		// 🚫 Skip OS junk files (macOS)
+		// --------------------------------------------------
+		if info.Name() == ".DS_Store" {
 			return nil
 		}
 
