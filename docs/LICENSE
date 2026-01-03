@@ -1,0 +1,31 @@
+
+---
+
+# 📄 `LICENSE` (Commercial, simple, safe)
+
+```text
+AuditExport Commercial License
+
+Copyright (c) 2026 AuditExport
+
+Permission is granted to use this software in binary form
+for internal business and audit purposes.
+
+Restrictions:
+- You may NOT redistribute, resell, sublicense, or share this software
+  or its binaries with third parties.
+- You may NOT modify, reverse engineer, or decompile the software.
+- You may NOT claim the software provides certification or guarantees
+  compliance with any standard.
+
+Ownership:
+All intellectual property rights remain with the author.
+
+Disclaimer:
+This software generates technical audit evidence only.
+It does NOT guarantee audit outcomes or certifications.
+
+The software is provided "AS IS", without warranty of any kind,
+express or implied.
+
+By using this software, you agree to these terms.
