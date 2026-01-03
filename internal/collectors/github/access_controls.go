@@ -3,11 +3,14 @@ package github
 import (
 	"auditexport/internal/run"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"time"
 )
+
+var ErrAccessControlsPermissionDenied = errors.New("access controls: insufficient permissions")
 
 type RepoAccess struct {
 	Repository  string    `json:"repository"`
@@ -19,7 +22,9 @@ type RepoAccess struct {
 type AccessControlsOutput struct {
 	CollectedAt time.Time    `json:"collected_at"`
 	Total       int          `json:"total"`
-	Entries     []RepoAccess `json:"entries"`
+	Status      string       `json:"status,omitempty"`
+	Reason      string       `json:"reason,omitempty"`
+	Entries     []RepoAccess `json:"entries,omitempty"`
 }
 
 func WriteAccessControls() error {
@@ -28,9 +33,7 @@ func WriteAccessControls() error {
 		return err
 	}
 
-	repoBytes, err := os.ReadFile(
-		run.EvidencePath("github", "repositories.json"),
-	)
+	repoBytes, err := os.ReadFile(run.EvidencePath("github", "repositories.json"))
 	if err != nil {
 		return err
 	}
@@ -63,8 +66,20 @@ func WriteAccessControls() error {
 				return err
 			}
 
+			if resp.StatusCode == 403 {
+				resp.Body.Close()
+				writeAccessControlsSkipped()
+				return ErrAccessControlsPermissionDenied
+			}
+
 			if resp.StatusCode != 200 {
 				resp.Body.Close()
+
+				if resp.StatusCode == 403 {
+					writeAccessControlsSkipped()
+					return ErrAccessControlsPermissionDenied
+				}
+
 				return fmt.Errorf(
 					"collaborators API error for %s: %s",
 					repo.FullName,
@@ -106,6 +121,13 @@ func WriteAccessControls() error {
 				permResp, err := client.httpClient.Do(permReq)
 				if err != nil {
 					return err
+				}
+
+				// 🔑 ALSO permission-gated here
+				if permResp.StatusCode == 403 {
+					permResp.Body.Close()
+					writeAccessControlsSkipped()
+					return ErrAccessControlsPermissionDenied
 				}
 
 				if permResp.StatusCode != 200 {
@@ -155,6 +177,21 @@ func WriteAccessControls() error {
 	}
 
 	return os.WriteFile(
+		run.EvidencePath("github", "access_controls.json"),
+		data,
+		0644,
+	)
+}
+
+func writeAccessControlsSkipped() {
+	output := AccessControlsOutput{
+		CollectedAt: time.Now().UTC(),
+		Status:      "skipped",
+		Reason:      "insufficient_permissions",
+	}
+
+	data, _ := json.MarshalIndent(output, "", "  ")
+	_ = os.WriteFile(
 		run.EvidencePath("github", "access_controls.json"),
 		data,
 		0644,

@@ -16,20 +16,14 @@ type RunFlags struct {
 func ParseRunFlags(args []string) RunFlags {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 
-	// Silence default Go error output
+	// Silence default flag output
 	fs.SetOutput(os.Stdout)
 
-	// -------------------------------
-	// Flags (ALL inputs are flags)
-	// -------------------------------
 	standard := fs.String("standard", "", "")
 	repo := fs.String("repo", "auditexport", "")
 	branch := fs.String("branch", "main", "")
 	dryRun := fs.Bool("dry-run", false, "")
 
-	// -------------------------------
-	// Custom professional help output
-	// -------------------------------
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stdout, `
 AuditExport — Technical Audit Evidence Generator
@@ -43,12 +37,10 @@ REQUIRED:
 
 OPTIONAL:
   --repo <repository>
-      GitHub repository name
-      Default: auditexport
+      GitHub repository name (default: auditexport)
 
   --branch <branch>
-      Target branch name
-      Default: main
+      Target branch name (default: main)
 
   --dry-run
       Validate configuration and print execution plan
@@ -68,26 +60,22 @@ EXAMPLES:
 `)
 	}
 
-	// -------------------------------
 	// Parse flags
-	// -------------------------------
 	if err := fs.Parse(args); err != nil {
-		// Handles --help and unknown flags cleanly
-		os.Exit(0)
+		if err == flag.ErrHelp {
+			os.Exit(0)
+		}
+		os.Exit(2)
 	}
 
-	// -------------------------------
 	// Reject positional arguments
-	// -------------------------------
 	if fs.NArg() > 0 {
 		fmt.Fprintf(os.Stderr, "unexpected arguments: %v\n\n", fs.Args())
 		fs.Usage()
 		os.Exit(2)
 	}
 
-	// -------------------------------
-	// Validate required flags
-	// -------------------------------
+	// Validate required flag
 	if *standard == "" {
 		fmt.Fprintln(os.Stderr, "error: --standard is required\n")
 		fs.Usage()

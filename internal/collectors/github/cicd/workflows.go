@@ -32,7 +32,13 @@ func WriteWorkflows(owner, repo string) error {
 		repo,
 	)
 
+	// if err := client.GetJSON(url, &resp); err != nil {
+	// 	return err
+	// }
 	if err := client.GetJSON(url, &resp); err != nil {
+		if github.IsNotFound(err) || github.IsForbidden(err) {
+			return ErrCICDNotAvailable
+		}
 		return err
 	}
 

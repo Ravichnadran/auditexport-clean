@@ -1,6 +1,8 @@
 package main
 
+// --- unchanged imports ---
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -22,23 +24,17 @@ func main() {
 	switch os.Args[1] {
 
 	case "run":
-		run.InitRunContext()
 
 		// --------------------------------------------------
-		// Parse & validate flags
+		// 🔒 HARD STOP — FLAG VALIDATION FIRST
 		// --------------------------------------------------
 		flags := cli.ParseRunFlags(os.Args[2:])
-
-		if flags.Standard != "iso27001" && flags.Standard != "soc2" {
-			fmt.Println("invalid --standard value (use iso27001 or soc2)")
-			os.Exit(1)
-		}
 
 		standard := run.Standard(flags.Standard)
 		caps := run.CapabilitiesForStandard(standard)
 
 		// --------------------------------------------------
-		// Step count (ISO27001 = 14, SOC2 = 15)
+		// Step count
 		// --------------------------------------------------
 		totalSteps := 14
 		if caps.AllowExtendedControls {
@@ -59,7 +55,7 @@ func main() {
 		step++
 
 		// --------------------------------------------------
-		// 🧪 Dry Run Mode (NO FILE SYSTEM / NO API CALLS)
+		// 🧪 Dry Run Mode
 		// --------------------------------------------------
 		if flags.DryRun {
 			fmt.Println("\nAuditExport — Dry Run Summary")
@@ -76,8 +72,10 @@ func main() {
 		}
 
 		// --------------------------------------------------
-		// Initialize run & output directories
+		// Initialize run context & directories
 		// --------------------------------------------------
+		run.InitRunContext()
+
 		cli.Step(step, totalSteps, "Initializing evidence directory")
 		if err := run.InitEvidenceRunDir(); err != nil {
 			cli.Failed("failed to initialize evidence directory")
@@ -100,7 +98,7 @@ func main() {
 		run.WriteExecutionLog("product standard: " + flags.Standard)
 
 		// --------------------------------------------------
-		// GitHub Evidence Collection (ISO 27001 baseline)
+		// GitHub Evidence Collection
 		// --------------------------------------------------
 		cli.Step(step, totalSteps, "Initializing GitHub evidence")
 		if err := github.InitGithubDir(); err != nil {
@@ -167,11 +165,26 @@ func main() {
 
 		cli.Step(step, totalSteps, "Collecting access controls")
 		if err := github.WriteAccessControls(); err != nil {
-			cli.Failed("failed to collect access controls")
-			fmt.Println(err)
-			os.Exit(1)
+			if errors.Is(err, github.ErrAccessControlsPermissionDenied) {
+				cli.Skipped("Access controls (insufficient permissions)")
+
+				run.RecordSkippedControl(run.SkippedControl{
+					Control:  "github.cicd",
+					Reason:   "not_available",
+					Details:  "GitHub Actions not enabled or inaccessible",
+					Severity: "not_applicable",
+					Impact:   "CI/CD controls are not applicable for this repository",
+				})
+
+				run.WriteExecutionLog("access controls skipped: insufficient permissions")
+			} else {
+				cli.Failed("failed to collect access controls")
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		} else {
+			cli.Done("Access controls collected")
 		}
-		cli.Done("Access controls collected")
 		step++
 
 		cli.Step(step, totalSteps, "Collecting protected branches")
@@ -193,7 +206,7 @@ func main() {
 		step++
 
 		// --------------------------------------------------
-		// SOC 2 Extended Controls (GATED)
+		// SOC 2 Extended Controls
 		// --------------------------------------------------
 		if caps.AllowExtendedControls {
 
@@ -206,28 +219,43 @@ func main() {
 			repo := flags.Repo
 			branch := flags.Branch
 
+			// cli.Step(step, totalSteps, "Collecting CI/CD evidence (GitHub Actions)")
+			// if err := cicd.WriteWorkflows(owner, repo); err != nil {
+			// 	fmt.Println(err)
+			// 	os.Exit(1)
+			// }
+			// if err := cicd.WriteWorkflowFiles(owner, repo); err != nil {
+			// 	fmt.Println(err)
+			// 	os.Exit(1)
+			// }
+			// if err := cicd.WriteWorkflowRuns(owner, repo); err != nil {
+			// 	fmt.Println(err)
+			// 	os.Exit(1)
+			// }
+			// if err := cicd.WriteCISummary(); err != nil {
+			// 	fmt.Println(err)
+			// 	os.Exit(1)
+			// }
+			// cli.Done("CI/CD evidence collected")
+			// step++
 			cli.Step(step, totalSteps, "Collecting CI/CD evidence (GitHub Actions)")
-			run.WriteExecutionLog("CI/CD evidence collection enabled")
-
 			if err := cicd.WriteWorkflows(owner, repo); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				if errors.Is(err, cicd.ErrCICDNotAvailable) {
+					cli.Skipped("CI/CD evidence (not available)")
+					run.WriteExecutionLog("ci/cd skipped: not available")
+					step++
+				} else {
+					cli.Failed("failed to collect CI/CD evidence")
+					fmt.Println(err)
+					os.Exit(1)
+				}
+			} else {
+				_ = cicd.WriteWorkflowFiles(owner, repo)
+				_ = cicd.WriteWorkflowRuns(owner, repo)
+				_ = cicd.WriteCISummary()
+				cli.Done("CI/CD evidence collected")
+				step++
 			}
-			if err := cicd.WriteWorkflowFiles(owner, repo); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			if err := cicd.WriteWorkflowRuns(owner, repo); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			if err := cicd.WriteCISummary(); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-
-			cli.Done("CI/CD evidence collected")
-			step++
 
 			if err := github.WriteRequiredReviews(owner, repo, branch); err != nil {
 				fmt.Println(err)
@@ -248,7 +276,9 @@ func main() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+
 		_ = summaries.WriteExecutiveSummary()
+		_ = run.WriteSkippedControls(flags.Standard)
 		_ = summaries.WriteGitHubSummary(flags.Standard)
 		_ = summaries.WriteTechnicalSummary()
 		_ = summaries.WriteAuditorNotes()

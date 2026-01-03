@@ -57,8 +57,11 @@ func (c *Client) GetJSON(url string, target interface{}) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("github api error: %s", resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		return &GitHubAPIError{
+			StatusCode: resp.StatusCode,
+			Message:    fmt.Sprintf("github api error: %s", resp.Status),
+		}
 	}
 
 	return json.NewDecoder(resp.Body).Decode(target)
