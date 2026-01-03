@@ -1,0 +1,49 @@
+package correlation
+
+import (
+	"auditexport/internal/run"
+	"encoding/json"
+	"os"
+	"time"
+)
+
+type FailedCI struct {
+	RunID      int       `json:"run_id"`
+	Name       string    `json:"name"`
+	FailedAt   time.Time `json:"failed_at"`
+	Conclusion string    `json:"conclusion"`
+}
+
+func CollectFailedCIRuns() ([]FailedCI, error) {
+
+	bytes, err := os.ReadFile(
+		run.EvidencePath("github", "workflows", "workflow_runs.json"),
+	)
+	if err != nil {
+		return nil, nil // valid audit state
+	}
+
+	var runs []struct {
+		ID         int       `json:"id"`
+		Name       string    `json:"name"`
+		Conclusion string    `json:"conclusion"`
+		CreatedAt  time.Time `json:"created_at"`
+	}
+
+	_ = json.Unmarshal(bytes, &runs)
+
+	var failed []FailedCI
+
+	for _, r := range runs {
+		if r.Conclusion == "failure" {
+			failed = append(failed, FailedCI{
+				RunID:      r.ID,
+				Name:       r.Name,
+				Conclusion: r.Conclusion,
+				FailedAt:   r.CreatedAt,
+			})
+		}
+	}
+
+	return failed, nil
+}

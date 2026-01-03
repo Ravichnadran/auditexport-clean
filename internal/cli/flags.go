@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 )
 
 type RunFlags struct {
@@ -11,6 +12,8 @@ type RunFlags struct {
 	Repo     string
 	Branch   string
 	DryRun   bool
+	FromDate string
+	ToDate   string
 }
 
 func ParseRunFlags(args []string) RunFlags {
@@ -23,6 +26,8 @@ func ParseRunFlags(args []string) RunFlags {
 	repo := fs.String("repo", "auditexport", "")
 	branch := fs.String("branch", "main", "")
 	dryRun := fs.Bool("dry-run", false, "")
+	fromDate := fs.String("from-date", "", "")
+	toDate := fs.String("to-date", "", "")
 
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stdout, `
@@ -42,6 +47,12 @@ OPTIONAL:
   --branch <branch>
       Target branch name (default: main)
 
+  --from-date YYYY-MM-DD
+      Audit window start date (SOC 2 only)
+
+  --to-date YYYY-MM-DD
+      Audit window end date (SOC 2 only)
+
   --dry-run
       Validate configuration and print execution plan
       without creating files or collecting evidence
@@ -55,7 +66,7 @@ ENVIRONMENT:
 
 EXAMPLES:
   auditexport run --standard iso27001
-  auditexport run --standard soc2 --repo my-repo
+  auditexport run --standard soc2 --from-date 2025-10-01 --to-date 2025-12-31
   auditexport run --standard soc2 --dry-run
 `)
 	}
@@ -88,10 +99,38 @@ EXAMPLES:
 		os.Exit(2)
 	}
 
+	// Validate date formats (if provided)
+	if *fromDate != "" {
+		if _, err := time.Parse("2006-01-02", *fromDate); err != nil {
+			fmt.Fprintf(os.Stderr, "invalid --from-date format (expected YYYY-MM-DD)\n\n")
+			os.Exit(2)
+		}
+	}
+
+	if *toDate != "" {
+		if _, err := time.Parse("2006-01-02", *toDate); err != nil {
+			fmt.Fprintf(os.Stderr, "invalid --to-date format (expected YYYY-MM-DD)\n\n")
+			os.Exit(2)
+		}
+	}
+
+	// Logical date validation
+	if *fromDate != "" && *toDate != "" {
+		from, _ := time.Parse("2006-01-02", *fromDate)
+		to, _ := time.Parse("2006-01-02", *toDate)
+
+		if from.After(to) {
+			fmt.Fprintln(os.Stderr, "--from-date cannot be after --to-date\n")
+			os.Exit(2)
+		}
+	}
+
 	return RunFlags{
 		Standard: *standard,
 		Repo:     *repo,
 		Branch:   *branch,
 		DryRun:   *dryRun,
+		FromDate: *fromDate,
+		ToDate:   *toDate,
 	}
 }

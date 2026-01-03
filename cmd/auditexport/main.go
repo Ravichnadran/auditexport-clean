@@ -5,12 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"auditexport/internal/cli"
 	"auditexport/internal/collectors/github"
 	"auditexport/internal/collectors/github/cicd"
 	"auditexport/internal/output"
 	"auditexport/internal/run"
+	"auditexport/internal/soc2/assertions"
+	"auditexport/internal/soc2/correlation"
+	"auditexport/internal/soc2/mapping"
 	"auditexport/internal/summaries"
 )
 
@@ -34,6 +38,7 @@ func main() {
 		// --------------------------------------------------
 		// 🔐 Build-tier enforcement (NO SIDE EFFECTS YET)
 		// --------------------------------------------------
+
 		if flags.Standard == "soc2" && BuildTier != "pro" {
 			fmt.Println("SOC 2 support is available in the paid version of AuditExport.")
 			os.Exit(1)
@@ -228,25 +233,6 @@ func main() {
 			repo := flags.Repo
 			branch := flags.Branch
 
-			// cli.Step(step, totalSteps, "Collecting CI/CD evidence (GitHub Actions)")
-			// if err := cicd.WriteWorkflows(owner, repo); err != nil {
-			// 	fmt.Println(err)
-			// 	os.Exit(1)
-			// }
-			// if err := cicd.WriteWorkflowFiles(owner, repo); err != nil {
-			// 	fmt.Println(err)
-			// 	os.Exit(1)
-			// }
-			// if err := cicd.WriteWorkflowRuns(owner, repo); err != nil {
-			// 	fmt.Println(err)
-			// 	os.Exit(1)
-			// }
-			// if err := cicd.WriteCISummary(); err != nil {
-			// 	fmt.Println(err)
-			// 	os.Exit(1)
-			// }
-			// cli.Done("CI/CD evidence collected")
-			// step++
 			cli.Step(step, totalSteps, "Collecting CI/CD evidence (GitHub Actions)")
 			if err := cicd.WriteWorkflows(owner, repo); err != nil {
 				if errors.Is(err, cicd.ErrCICDNotAvailable) {
@@ -274,6 +260,40 @@ func main() {
 				fmt.Println(err)
 				os.Exit(1)
 			}
+		}
+
+		if standard == run.SOC2 {
+
+			from := time.Now().AddDate(0, -3, 0) // default 3 months
+			to := time.Now()
+
+			events, err := correlation.BuildChangeEvents(from, to)
+			if err == nil {
+				_ = assertions.WriteChangeManagementAssertions(len(events))
+				_ = mapping.WriteControlMapping()
+			}
+		}
+
+		if standard == run.SOC2 {
+
+			from := time.Now().AddDate(0, -3, 0)
+			to := time.Now()
+
+			if flags.FromDate != "" {
+				from, _ = time.Parse("2006-01-02", flags.FromDate)
+			}
+			if flags.ToDate != "" {
+				to, _ = time.Parse("2006-01-02", flags.ToDate)
+			}
+
+			events, _ := correlation.BuildChangeEvents(from, to)
+
+			violations, _ := correlation.CheckReviewerIndependence(from, to)
+
+			_ = assertions.WriteExtendedSOC2Assertions(
+				len(events),
+				len(violations),
+			)
 		}
 
 		// --------------------------------------------------
