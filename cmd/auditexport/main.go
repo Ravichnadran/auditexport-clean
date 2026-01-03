@@ -14,6 +14,8 @@ import (
 	"auditexport/internal/summaries"
 )
 
+var BuildTier = "free" // overridden at build time
+
 func main() {
 
 	if len(os.Args) < 2 {
@@ -29,6 +31,13 @@ func main() {
 		// 🔒 HARD STOP — FLAG VALIDATION FIRST
 		// --------------------------------------------------
 		flags := cli.ParseRunFlags(os.Args[2:])
+		// --------------------------------------------------
+		// 🔐 Build-tier enforcement (NO SIDE EFFECTS YET)
+		// --------------------------------------------------
+		if flags.Standard == "soc2" && BuildTier != "pro" {
+			fmt.Println("SOC 2 support is available in the paid version of AuditExport.")
+			os.Exit(1)
+		}
 
 		standard := run.Standard(flags.Standard)
 		caps := run.CapabilitiesForStandard(standard)
